@@ -1,0 +1,23 @@
+# Arquivos de Log
+*.log
+
+# Arquivos de Build do Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# Arquivos do IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Arquivos do VS Code
+.vscode/
+
+# Outros
+.DS_Store

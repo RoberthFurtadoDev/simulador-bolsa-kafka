@@ -1,0 +1,18 @@
+server:
+  port: 8081 # Nova porta para a nossa aplicação
+
+spring:
+  application:
+    name: market-data-simulator
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+app:
+  kafka:
+    topic:
+      market-data: cotacoes_acoes

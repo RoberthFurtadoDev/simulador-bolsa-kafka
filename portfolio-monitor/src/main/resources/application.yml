@@ -1,0 +1,21 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: portfolio-monitor
+  kafka:
+    bootstrap-servers: localhost:29092 # Corrigi para a porta correta 29092
+    consumer:
+      group-id: portfolio-monitor-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # ✅ ESSA É A LINHA CRÍTICA QUE PRECISA SER CORRIGIDA
+        spring.json.value.default.type: portfolio_monitor.domain.model.StockTick
+        spring.json.use.type.headers: false
+
+app:
+  kafka:
+    topic:
+      market-data: cotacoes_acoes
