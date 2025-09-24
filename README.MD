@@ -8,7 +8,7 @@
 
 Este projeto simula um ecossistema completo de processamento de dados financeiros em tempo real. Utilizando uma arquitetura de microsserviços reativa e orientada a eventos, a plataforma demonstra um fluxo de dados desde a geração até a análise, notificação e visualização.
 
-É ideal como projeto de portfólio para demonstrar competências em desenvolvimento back-end, arquitetura distribuída, streaming, persistência e visualização em tempo real.
+Competências desenvolvidas back-end, arquitetura distribuída, streaming, persistência e visualização em tempo real.
 
 ---
 
