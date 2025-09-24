@@ -19,10 +19,10 @@ A arquitetura foi desenhada para ser desacoplada, resiliente e escalável. O **A
 ```mermaid
 flowchart TD
   subgraph Infra["Infraestrutura (Docker Compose)"]
-    ZK[Zookeeper (opcional)]
-    Kafka[Apache Kafka Cluster]
-    Postgres[PostgreSQL]
-    Grafana[Grafana / Prometheus (opcional)]
+    ZK["Zookeeper (opcional)"]
+    Kafka["Apache Kafka Cluster"]
+    Postgres["PostgreSQL"]
+    Grafana["Grafana / Prometheus (opcional)"]
   end
 
   subgraph Microsserviços["Microsserviços"]
@@ -34,8 +34,8 @@ flowchart TD
   end
 
   subgraph Externas["Interfaces Externas"]
-    User[/'👤 Usuário (Postman, Curl)'/]
-    Browser[/'💻 Navegador (Dashboard - WebSocket)'/]
+    User["👤 Usuário (Postman, Curl)"]
+    Browser["💻 Navegador (Dashboard - WebSocket)"]
   end
 
   Simulator -- "Publica cotações → topic: cotacoes_acoes" --> Kafka
