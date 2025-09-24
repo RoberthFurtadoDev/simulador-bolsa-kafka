@@ -1,7 +1,7 @@
 package com.seucompany.fintech.marketdata.infrastructure.adapter.in.scheduler;
 
 import com.seucompany.fintech.marketdata.application.port.out.StockTickEventPublisher;
-import com.seucompany.fintech.marketdata.domain.model.StockTick;
+import com.seucompany.fintech.marketdata.domain.StockTick;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;

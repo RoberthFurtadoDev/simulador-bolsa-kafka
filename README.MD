@@ -1,146 +1,169 @@
-## 📈 Simulador de Ativos da Bolsa de Valores com Java, Spring Boot e Apache Kafka
+# 📈 Plataforma Financeira com Java, Spring Boot e Apache Kafka
 
-Este projeto simula um ambiente de processamento de dados financeiros em tempo real, utilizando uma arquitetura de microsserviços reativa e orientada a eventos. A aplicação consiste em um serviço que gera cotações de ações (**Producer**) e outro que consome essas cotações para monitorar alertas de preços definidos pelo usuário (**Consumer**).
-
-Este é um projeto de portfólio, idealizado para demonstrar competências avançadas em desenvolvimento back-end, arquitetura de software e tecnologias de streaming de dados.
+![Java](https://img.shields.io/badge/Java-21-blue?style=for-the-badge\&logo=openjdk) ![Spring](https://img.shields.io/badge/Spring_Boot-3.x-green?style=for-the-badge\&logo=spring) ![Kafka](https://img.shields.io/badge/Apache_Kafka-3.x-black?style=for-the-badge\&logo=apachekafka) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=for-the-badge\&logo=postgresql) ![Docker](https://img.shields.io/badge/Docker-gray?style=for-the-badge\&logo=docker)
 
 ---
+
+## 📑 Visão Geral
+
+Este projeto simula um ecossistema completo de processamento de dados financeiros em tempo real. Utilizando uma arquitetura de microsserviços reativa e orientada a eventos, a plataforma demonstra um fluxo de dados desde a geração até a análise, notificação e visualização.
+
+É ideal como projeto de portfólio para demonstrar competências em desenvolvimento back-end, arquitetura distribuída, streaming, persistência e visualização em tempo real.
+
+---
+
 ## 🏗️ Arquitetura do Sistema
 
-A arquitetura foi desenhada para ser desacoplada, resiliente e escalável, seguindo os princípios de microsserviços. A comunicação entre os serviços é feita de forma assíncrona através do **Apache Kafka**, que atua como a espinha dorsal do sistema.
+A arquitetura foi desenhada para ser desacoplada, resiliente e escalável. O **Apache Kafka** atua como backbone (message broker), permitindo comunicação assíncrona entre microsserviços.
 
 ```mermaid
-graph TD
-    subgraph "Ambiente de Execução"
-        A[👤 Usuário via Postman]
-        B[micro: market-data-simulator - Producer]
-        C[fa:fa-server Kafka Cluster]
-        D[micro: portfolio-monitor - Consumer & API]
-    end
+flowchart TD
+  subgraph Infra["Infraestrutura (Docker Compose)"]
+    ZK[Zookeeper (opcional)]
+    Kafka[Apache Kafka Cluster]
+    Postgres[PostgreSQL]
+    Grafana[Grafana / Prometheus (opcional)]
+  end
 
-    style B fill:#d4edda,stroke:#155724
-    style D fill:#cce5ff,stroke:#004085
-    style C fill:#f8d7da,stroke:#721c24
+  subgraph Microsserviços["Microsserviços"]
+    Simulator["market-data-simulator<br/>(Producer)"]
+    Monitor["portfolio-monitor<br/>(API REST + Consumer)"]
+    Indicator["technical-indicator-service<br/>(Kafka Streams)"]
+    Notifier["notification-service<br/>(Consumer)"]
+    Dashboard["dashboard-service<br/>(WebSocket + Consumer)"]
+  end
 
-    B -- Publica cotações (JSON) --> C(Tópico: cotacoes_acoes)
-    C -- Entrega cotações --> D
-    A -- POST /alerts (JSON) --> D
-    D -- Salva Alerta em Memória --> D
-    D -- Dispara Alerta (Log) --> D
+  subgraph Externas["Interfaces Externas"]
+    User[/'👤 Usuário (Postman, Curl)'/]
+    Browser[/'💻 Navegador (Dashboard - WebSocket)'/]
+  end
+
+  Simulator -- "Publica cotações → topic: cotacoes_acoes" --> Kafka
+  Kafka -- "Entrega cotações" --> Monitor
+  Kafka -- "Entrega cotações" --> Indicator
+  Kafka -- "Entrega cotações" --> Dashboard
+
+  Indicator -- "Publica indicadores → topic: indicadores_tecnicos" --> Kafka
+  Kafka -- "Entrega indicadores" --> Dashboard
+
+  User -- "POST /alerts" --> Monitor
+  Monitor -- "Persiste alertas → PostgreSQL" --> Postgres
+  Monitor -- "Publica evento → topic: alertas_disparados" --> Kafka
+  Kafka -- "Consumido" --> Notifier
+  Notifier -- "Envia/Simula notificação (log/email/push)" --> Notifier
+
+  Dashboard -- "Push via WebSocket" --> Browser
+
+  style Simulator fill:#d4edda,stroke:#155724
+  style Monitor fill:#cce5ff,stroke:#004085
+  style Indicator fill:#fff3cd,stroke:#856404
+  style Notifier fill:#f5c6cb,stroke:#721c24
+  style Dashboard fill:#d1ecf1,stroke:#0c5460
+  style Kafka fill:#f0f0f0,stroke:#e07a5f,stroke-width:2px
+  style Postgres fill:#c8f7e5,stroke:#116c5a
 ```
----
-
-## ✨ Decisões Técnicas e Arquiteturais
-
-* **Microsserviços:** separação em *market-data-simulator* e *portfolio-monitor* para permitir evolução e escalabilidade independentes.
-* **Apache Kafka como Message Broker:** escolhido pela alta vazão, tolerância a falhas e persistência de eventos.
-* **Arquitetura Limpa / Hexagonal:** organização em `domain`, `application`, `infrastructure` para isolar regras de negócio dos detalhes de infraestrutura.
-* **Comunicação Assíncrona:** eventos desacoplam produtor e consumidores, facilitando expansão do ecossistema.
-* **Docker & Docker Compose:** ambiente reproducível para desenvolvimento e testes locais.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-| Tecnologia       | Versão/Tipo | Descrição/Propósito                                           |
-| ---------------- | ----------- | ------------------------------------------------------------- |
-| Java             | 21          | Linguagem principal; uso de recursos modernos (Records, etc.) |
-| Spring Boot      | 3.x         | Framework para microsserviços                                 |
-| Apache Kafka     | 3.x         | Plataforma de streaming e message broker                      |
-| Spring for Kafka | -           | Integração simplificada com Kafka                             |
-| Docker           | -           | Contêineres para executar Kafka e dependências                |
-| Maven            | -           | Build e gerenciamento de dependências                         |
-| Lombok           | -           | Redução de boilerplate                                        |
-| Postman          | -           | Testes da API de alertas                                      |
+| Tecnologia              | Versão/Tipo   | Descrição/Propósito                                                 |
+|------------------------:|:-------------:|---------------------------------------------------------------------|
+| Java                   | 21            | Linguagem principal; uso de recursos modernos (Records, etc.)       |
+| Spring Boot            | 3.x           | Framework para microsserviços                                       |
+| Spring WebFlux         | -             | Reatividade e WebSockets (dashboard)                                |
+| Apache Kafka           | 3.x           | Message broker e streaming                                          |
+| Kafka Streams          | -             | Processamento de streams (indicadores, windowed/stateful)           |
+| PostgreSQL             | 15            | Persistência de alertas e histórico                                 |
+| Docker / Docker Compose| -             | Ambiente reproducível para infraestrutura (Kafka, DB, etc.)        |
+| Maven                  | 3.8+          | Build e gerenciamento de dependências                               |
+| Lombok                 | -             | Redução de boilerplate (getters/setters, construtores, etc.)        |
+| HTML / CSS / JS        | -             | Tecnologias front-end para o dashboard                              |
+| Postman / curl         | -             | Ferramentas para testes e validação da API                          |
+| Prometheus / Grafana   | -             | Observability / métricas e dashboards (opcional)                    |
+
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## ⚙️ Como Rodar o Projeto (resumo)
 
-### Pré-requisitos
+1. **Pré-requisitos:** JDK 21, Maven, Docker, Docker Compose.
+2. **Iniciar infraestrutura:** `docker-compose up -d` (na raiz do repo).
+3. **Iniciar microsserviços:** em terminais separados, `mvn spring-boot:run` nas pastas de cada serviço.
 
-* Git
-* JDK 21 (ou superior)
-* Maven 3.8+
-* Docker e Docker Compose
-
-### Passo 1 — Clone o Repositório
-
-```bash
-git clone <URL_DO_SEU_REPOSITORIO>
-cd <NOME_DA_PASTA_DO_PROJETO>
-```
-
-### Passo 2 — Inicie o Ambiente Kafka com Docker
-
-```bash
-docker-compose up -d
-```
-
-Aguarde os contêineres subirem. A UI do Kafka (se configurada) costuma ficar em `http://localhost:8080`.
-
-### Passo 3 — Execute o microsserviço Producer
-
-```bash
-cd market-data-simulator
-mvn spring-boot:run
-```
-
-O serviço publicará cotações periodicamente (ex.: 2 segundos).
-
-### Passo 4 — Execute o microsserviço Consumer
-
-```bash
-cd portfolio-monitor
-mvn spring-boot:run
-```
-
-O serviço consumirá as cotações e exporá a API para criação de alertas.
+Ordem sugerida: `market-data-simulator` → `portfolio-monitor` → `technical-indicator-service` → `notification-service` → `dashboard-service`.
 
 ---
 
-## ⚙️ Como Usar a Aplicação
+## ⚙️ Como Usar / Endpoints (exemplo)
 
-### 1) Registrar um Alerta de Preço
+* **Dashboard:** `http://localhost:8085`
+* **Criar alerta:** `POST http://localhost:8082/alerts`
 
-Exemplo com `curl`:
+Exemplo de body JSON:
 
-```bash
-curl -X POST http://localhost:8082/alerts \
--H "Content-Type: application/json" \
--d '{
-      "symbol": "PETR4",
-      "targetPrice": 50.00
-    }'
+```json
+{
+  "symbol": "PETR4",
+  "targetPrice": 20.00,
+  "direction": "LESS_OR_EQUAL"
+}
 ```
 
-* Método: `POST`
-* URL: `http://localhost:8082/alerts`
-* Body: JSON com `symbol` e `targetPrice`
+---
 
-Resposta esperada: `202 Accepted`.
+## 🔬 Schemas (exemplos)
 
-### 2) Observar os Logs
+**TICK (cotação) — `cotacoes_acoes`**
 
-* `Received stock tick...` para cada cotação consumida.
-* `!!! ALERT TRIGGERED !!!` quando o preço atingir o alvo configurado.
+```json
+{
+  "symbol": "PETR4",
+  "timestamp": "2025-09-23T21:05:00Z",
+  "price": 19.85,
+  "volume": 1200
+}
+```
+
+**INDICADOR — `indicadores_tecnicos`**
+
+```json
+{
+  "symbol": "PETR4",
+  "type": "SMA",
+  "window": 20,
+  "value": 20.12,
+  "timestamp": "2025-09-23T21:05:00Z"
+}
+```
+
+**ALERTA (disparado) — `alertas_disparados`**
+
+```json
+{
+  "alertId": "uuid-v4",
+  "symbol": "PETR4",
+  "targetPrice": 20.00,
+  "currentPrice": 19.99,
+  "direction": "LESS_OR_EQUAL",
+  "firedAt": "2025-09-23T21:05:01Z"
+}
+```
 
 ---
 
-## 🔮 Próximos Passos (Sugestões)
+## ✅ Próximos passos (sugestões)
 
-* Implementar um microsserviço para cálculo de indicadores com **Kafka Streams**.
-* Persistir alertas em um banco (PostgreSQL, MongoDB).
-* Criar um dashboard em tempo real (WebSockets) para visualizar cotações e alertas.
-* Adicionar um serviço de notificação para simular envio de e-mails / push.
+* Versionar schemas com Avro / Schema Registry.
+* Adicionar retry/backoff, DLQ e idempotência.
+* Integrar observability (Prometheus + Grafana).
+* Adicionar autenticação (JWT/OAuth2) nas APIs.
 
 ---
 
-## 👨‍💻 Autor
+## Autor
 
-Projeto desenvolvido como parte do meu portfólio pessoal. Sinta-se à vontade para explorar, testar e contribuir.
+**Roberth Furtado Ferreira de Oliveira** — LinkedIn: [https://www.linkedin.com/in/roberthfurtado/](https://www.linkedin.com/in/roberthfurtado/) — GitHub: [https://github.com/RoberthFurtadoDev](https://github.com/RoberthFurtadoDev)
 
-**\[Roberth Furtado Ferreira de Oliveira]**
 
-* LinkedIn: \[https://www.linkedin.com/in/roberthfurtado/]
-* GitHub: \[https://github.com/RoberthFurtadoDev]
+

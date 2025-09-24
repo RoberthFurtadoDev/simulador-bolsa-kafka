@@ -5,17 +5,35 @@ spring:
   application:
     name: portfolio-monitor
   kafka:
-    bootstrap-servers: localhost:29092 # Corrigi para a porta correta 29092
+    bootstrap-servers: localhost:29092
     consumer:
       group-id: portfolio-monitor-group
+      auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        # ✅ ESSA É A LINHA CRÍTICA QUE PRECISA SER CORRIGIDA
-        spring.json.value.default.type: portfolio_monitor.domain.model.StockTick
-        spring.json.use.type.headers: false
+        spring.json.trust.packages: "*"
+        spring.json.value.default.type: portfolio.monitor.domain.model.StockTick
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  datasource:
+    url: jdbc:postgresql://localhost:5433/portfolio_monitor_db
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
 app:
   kafka:
     topic:
       market-data: cotacoes_acoes
+      output:
+        alerts-triggered: alertas_disparados
+

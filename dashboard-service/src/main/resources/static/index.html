@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard de Ações em Tempo Real</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #121212;
+            --card-bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #4caf50;
+            --secondary-color: #03a9f4;
+            --alert-color: #f44336;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2em;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2em;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background-color: var(--card-bg-color);
+            border-radius: 8px;
+            padding: 1.5em;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            font-family: 'Roboto Mono', monospace;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5em;
+            margin-top: 0;
+            font-size: 1.2em;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        #alerts-card h2 { color: var(--alert-color); border-bottom-color: var(--alert-color); }
+
+        .data-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .data-item {
+            background-color: #2a2a2a;
+            padding: 1em;
+            border-radius: 4px;
+            margin-bottom: 1em;
+            border-left: 4px solid var(--primary-color);
+            overflow-wrap: break-word;
+        }
+
+        .data-item.alert {
+            border-left-color: var(--alert-color);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .data-item.indicator {
+            border-left-color: var(--secondary-color);
+        }
+
+        .data-item p {
+            margin: 0.3em 0;
+        }
+
+        .data-item .symbol {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 700;
+            font-size: 1.5em;
+            color: #fff;
+        }
+
+        .data-item .price {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.2em;
+            color: var(--primary-color);
+        }
+
+        .data-item .timestamp {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--card-bg-color); }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #777; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h2>Últimas Cotações (Ticks)</h2>
+        <div id="ticks-list" class="data-list">
+            <p>Aguardando dados...</p>
+        </div>
+    </div>
+    <div class="card">
+        <h2>Médias Móveis (30s)</h2>
+        <div id="indicators-list" class="data-list">
+            <p>Aguardando dados...</p>
+        </div>
+    </div>
+    <div class="card" id="alerts-card">
+        <h2>Alertas Disparados</h2>
+        <div id="alerts-list" class="data-list">
+            <p>Nenhum alerta...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ticksList = document.getElementById('ticks-list');
+    const indicatorsList = document.getElementById('indicators-list');
+    const alertsList = document.getElementById('alerts-list');
+
+    let latestTicks = {};
+    let latestIndicators = {};
+
+    function formatPrice(price) {
+        return price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatTimestamp(ts) {
+        return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function connect() {
+        const socket = new WebSocket('ws://localhost:8085/ws/data');
+
+        socket.onopen = function(e) {
+            console.log("Conexão WebSocket estabelecida!");
+            ticksList.innerHTML = '<p>Conectado. Aguardando dados...</p>';
+        };
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const p = data.payload;
+
+            if (data.type === 'TICK') {
+                latestTicks[p.symbol] = p;
+                updateList(ticksList, latestTicks, 'TICK');
+            } else if (data.type === 'INDICATOR') {
+                latestIndicators[p.symbol] = p;
+                updateList(indicatorsList, latestIndicators, 'INDICATOR');
+            } else if (data.type === 'ALERT') {
+                const currentContent = alertsList.querySelector('p') ? '' : alertsList.innerHTML;
+                const alertHtml = `
+                    <div class="data-item alert">
+                        <p class="symbol">${p.symbol}</p>
+                        <p><strong>Alvo Atingido:</strong> ${formatPrice(p.targetPrice)}</p>
+                        <p><strong>Preço Atual:</strong> ${formatPrice(p.triggeredPrice)}</p>
+                        <p class="timestamp">${formatTimestamp(p.timestamp)}</p>
+                    </div>`;
+                alertsList.innerHTML = alertHtml + currentContent;
+            }
+        };
+
+        socket.onclose = function(event) {
+            console.log('Conexão WebSocket fechada. Tentando reconectar em 2 segundos...');
+            ticksList.innerHTML = '<p>Conexão perdida. Tentando reconectar...</p>';
+            setTimeout(connect, 2000);
+        };
+
+        socket.onerror = function(error) {
+            console.error(`WebSocket Error: ${error.message}`);
+            socket.close();
+        };
+    }
+
+    function updateList(element, dataMap, type) {
+        let content = '';
+        for (const symbol in dataMap) {
+            const item = dataMap[symbol];
+            if (type === 'TICK') {
+                content += `
+                    <div class="data-item">
+                        <p class="symbol">${item.symbol}</p>
+                        <p class="price">${formatPrice(item.price)}</p>
+                        <p class="timestamp">${formatTimestamp(item.timestamp)}</p>
+                    </div>`;
+            } else if (type === 'INDICATOR') {
+                 content += `
+                    <div class="data-item indicator">
+                        <p class="symbol">${item.symbol}</p>
+                        <p>Média (30s): <strong class="price">${formatPrice(item.average)}</strong></p>
+                        <p class="timestamp">${formatTimestamp(item.timestamp)}</p>
+                    </div>`;
+            }
+        }
+        element.innerHTML = content;
+    }
+
+    connect();
+</script>
+</body>
+</html>
+

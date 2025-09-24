@@ -1,0 +1,20 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: technical-indicator-service
+  kafka:
+    bootstrap-servers: localhost:29092
+    streams:
+      application-id: technical-indicator-streams-app
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.springframework.kafka.support.serializer.JsonSerde
+
+app:
+  kafka:
+    topic:
+      input: cotacoes_acoes
+      output: indicadores_tecnicos
+

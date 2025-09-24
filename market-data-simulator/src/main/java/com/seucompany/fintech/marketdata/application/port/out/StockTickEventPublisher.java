@@ -1,6 +1,6 @@
 package com.seucompany.fintech.marketdata.application.port.out;
 
-import com.seucompany.fintech.marketdata.domain.model.StockTick;
+import com.seucompany.fintech.marketdata.domain.StockTick;
 
 /**
  * Port (Interface) que define o contrato para publicar eventos de cotação de ações.
